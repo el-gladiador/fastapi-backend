@@ -1,10 +1,22 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 import json
+import os
+import shutil
 
 app = FastAPI()
+
+# Create a directory to save uploaded images
+UPLOAD_DIRECTORY = "./uploaded_images"
+
+# exist_ok=True means if dir exist don't change anything
+os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+
+# Mount the static files directory
+app.mount("/uploaded_images", StaticFiles(directory=UPLOAD_DIRECTORY), name="uploaded_images")
 
 class Drawing(BaseModel):
     r: int
@@ -60,9 +72,16 @@ async def upload_image(
         synced=synced
     )
 
-    # Process the uploaded file
-    contents = await file.read()
+    # Save the uploaded file
+    file_location = os.path.join(UPLOAD_DIRECTORY, file.filename)
+    with open(file_location, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    
+    # Return the image URL in the response
+    image_url = f"/uploaded_images/{file.filename}"
+    return JSONResponse(content={"message": "File uploaded successfully", "image_url": image_url, "imageObject": image_object.dict()})
 
-    # Here you can save the file, process the image, etc.
-    # For this example, we'll just return a confirmation message
-    return JSONResponse(content={"message": "File uploaded successfully", "imageObject": image_object.dict()})
+# Optional: add a health check endpoint
+@app.get("/health")
+def health_check():
+    return {"status": "OK"}

@@ -1,9 +1,11 @@
-version: "3.8"
+version: '3.8'
 
 services:
   web:
     build: .
     volumes:
       - .:/app
+      - ./uploaded_images:/app/uploaded_images
     ports:
       - "8000:8000"
+# H5eC7Fsw
